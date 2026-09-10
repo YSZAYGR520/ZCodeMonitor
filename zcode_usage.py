@@ -522,13 +522,13 @@ def load_request_rows(cur, since_ms=None, session_ids=None):
         rows = cur.execute(
             "SELECT session_id, model_id, query_source, duration_ms, "
             "time_to_first_token_ms, input_tokens, output_tokens, "
-            "reasoning_tokens, computed_total_tokens "
+            "reasoning_tokens, computed_total_tokens, cache_read_input_tokens "
             "FROM model_usage WHERE status='completed'").fetchall()
     else:
         rows = cur.execute(
             "SELECT session_id, model_id, query_source, duration_ms, "
             "time_to_first_token_ms, input_tokens, output_tokens, "
-            "reasoning_tokens, computed_total_tokens "
+            "reasoning_tokens, computed_total_tokens, cache_read_input_tokens "
             "FROM model_usage WHERE status='completed' AND started_at>=?",
             [since_ms]).fetchall()
     if session_ids:
@@ -557,11 +557,12 @@ def dist_stats(values):
 def model_dist_panel(cur, since_ms=None, session_ids=None):
     """按模型聚合请求级分布 + 算力(total_tokens)与主/子任务来源计数。"""
     groups = {}
-    for _sid, mid, qsrc, dur, ttft, inp, outp, reas, ctot in \
+    for _sid, mid, qsrc, dur, ttft, inp, outp, reas, ctot, cread in \
             load_request_rows(cur, since_ms, session_ids):
         g = groups.setdefault(mid, {
             "requests": 0, "speed": [], "ttft": [], "dur": [], "in": [], "out": [],
             "s_tok": 0.0, "s_ms": 0, "total_tokens": 0,
+            "cache_read": 0, "cache_in": 0,
             "main_count": 0, "subagent_count": 0})
         reas = reas or 0
         out_all = (outp or 0) + reas
@@ -577,6 +578,8 @@ def model_dist_panel(cur, since_ms=None, session_ids=None):
         g["s_tok"] += out_all
         g["s_ms"] += (dur or 0)
         g["total_tokens"] += ctot if ctot else ((inp or 0) + out_all)
+        g["cache_read"] += (cread or 0)
+        g["cache_in"] += (inp or 0)
         if qsrc == "subagent":
             g["subagent_count"] += 1
         else:
@@ -585,6 +588,7 @@ def model_dist_panel(cur, since_ms=None, session_ids=None):
     out = {}
     for mid, g in groups.items():
         s_ms_s = g["s_ms"] / 1000.0
+        cache_ratio = (g["cache_read"] / g["cache_in"]) if g["cache_in"] else None
         out[mid] = {
             "requests": g["requests"],
             "weighted_tps": (g["s_tok"] / s_ms_s) if s_ms_s > 0 else None,
@@ -594,6 +598,9 @@ def model_dist_panel(cur, since_ms=None, session_ids=None):
             "output_tokens": dist_stats(g["out"]),
             "input_tokens": dist_stats(g["in"]),
             "total_tokens": g["total_tokens"],
+            "cache_read_tokens": g["cache_read"],
+            "cache_in_tokens": g["cache_in"],
+            "cache_ratio": cache_ratio,
             "main_count": g["main_count"],
             "subagent_count": g["subagent_count"],
         }
@@ -693,13 +700,13 @@ def load_override():
         import winreg
         k = winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_BASE)
         try:
-            for name in ("refresh_seconds", "warn_pct", "crit_pct"):
+            for name in ("refresh_seconds", "warn_pct", "crit_pct", "win_h"):
                 try:
                     v, _ = winreg.QueryValueEx(k, name)
                     d[name] = int(v)
                 except (FileNotFoundError, OSError, TypeError):
                     pass
-            for name in ("theme", "modules"):
+            for name in ("theme", "modules", "log_open", "win_x", "win_y"):
                 try:
                     v, _ = winreg.QueryValueEx(k, name)
                     d[name] = v
@@ -722,7 +729,8 @@ def save_override(updates):
             for name, v in updates.items():
                 if v is None:
                     continue
-                if name in ("refresh_seconds", "warn_pct", "crit_pct"):
+                if name in ("refresh_seconds", "warn_pct", "crit_pct",
+                            "win_x", "win_y", "win_h"):
                     winreg.SetValueEx(k, name, 0, winreg.REG_DWORD, int(v))
                 else:
                     winreg.SetValueEx(k, name, 0, winreg.REG_SZ, str(v))
@@ -748,7 +756,7 @@ def load_monitor_config(path=None):
     import json as _json
     cfg = {"plan": "pro", "credits_per_request": 7.0, "week_start": "monday",
            "refresh_seconds": 10, "warn_pct": 85, "crit_pct": 95,
-           "theme": "system",
+           "theme": "system", "log_open": False,
            "context_limits": dict(DEFAULT_CONTEXT_LIMITS)}
     if path is None:
         path = monitor_config_path()
@@ -824,6 +832,16 @@ def load_monitor_config(path=None):
         if ov.get(pk):
             try:
                 cfg[pk] = max(50, min(100, int(ov[pk])))
+            except (TypeError, ValueError):
+                pass
+    lo = ov.get("log_open")
+    if lo is not None:
+        cfg["log_open"] = str(lo).strip().lower() in ("1", "true", "yes", "on")
+    for wk in ("win_x", "win_y", "win_h"):
+        v = ov.get(wk)
+        if v is not None:
+            try:
+                cfg[wk] = int(v)
             except (TypeError, ValueError):
                 pass
     return cfg

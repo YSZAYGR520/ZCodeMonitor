@@ -13,7 +13,6 @@
 输出统计的桌面监控面板。数据 100% 本地读取 + 官方额度接口(只读)，不修改 ZCode 数据。
 
 ## 界面形态
-<img width="595" height="949" alt="2026-09-10_09-57-39" src="https://github.com/user-attachments/assets/2e3f0378-696e-4150-8877-e9e1a4daf120" />
 
 | 形态 | 入口 | 说明 |
 | --- | --- | --- |
@@ -22,23 +21,24 @@
 
 > tkinter 版要点: 无边框置顶悬浮窗 · 顶栏拖动 · 时间窗切换(今日/7天/30天/全部) ·
 > 最小化到任务栏(—按钮) · 渐变额度条(超阈值变琥珀/红) · 5h积分与速率同行 ·
-> 深浅主题 · 设置(刷新间隔/预警阈值/主题/模块开关→注册表持久化) ·
-> 窗口高度自适应内容 · 三段式布局(顶栏/底栏固定, 中部滚动)。
+> 深浅主题 · 设置(刷新间隔/预警阈值/主题/模块开关/窗口高度→注册表持久化) ·
+> 窗口高度: 默认自适应内容(上限=屏幕工作区, 自动防盖任务栏), 也可在设置窗指定固定高度 ·
+> **面板整体不滚动**, 模块完整展开; 仅「模型速度」卡内容超出时在卡内滚动(带细滚动条)。
 > SQLite 用普通连接+`PRAGMA query_only` 读 WAL 库(`mode=ro` 会与写入方死锁,勿回退)。
 
 ## 快速开始
 
-> 压缩包内已附带打包好的 `ZCodeMonitor.exe`（12MB，Windows x64，无需任何环境），
-> 双击即可运行；无法运行时（如被安全策略拦截）再用下面的源码方式。
+> 本仓库已附带打包好的 `ZCodeMonitor.exe`（12MB，Windows x64，无需任何环境），
+> 克隆或下载本仓库后双击即可运行；无法运行时（如被安全策略拦截）再用源码方式。
 
 ```bash
-# 方式一: 直接运行(需 Python 3.8+, 无需安装任何第三方库)
+# 方式一: 双击 ZCodeMonitor.exe 直接运行(仓库内附带, 无需任何环境)
+# 方式二: 源码运行(需 Python 3.8+, 无需安装任何第三方库)
 python zcode_monitor_tk.py
 
-# 方式二: Windows 双击 启动悬浮窗.bat
 # 方式三: 自行打包独立 EXE(12MB, 目标机无需任何环境)
 pip install pyinstaller
-pyinstaller --onefile --windowed --name ZCodeMonitor zcode_monitor_tk.py
+pyinstaller --onefile --windowed --name ZCodeMonitor --icon logo.ico zcode_monitor_tk.py
 
 # 命令行统计
 python zcode_usage_cli.py --window 7d --by-model
@@ -62,7 +62,7 @@ python zcode_usage_cli.py --window 7d --by-model
 
 ## 开源说明
 
-- 许可: MIT(可自由使用/修改/分发, 保留版权声明即可)
+- 许可: MIT(可自由使用/修改/分发, 保留版权声明即可, 见 `LICENSE`)
 - 欢迎 PR/issue; 改 UI 布局时请注意 tk 字体实际渲染框比字号大约 40%,
   行距建议 ≥ 字号×1.9, 或参考源码中的 bbox 检测思路自行验证。
 
@@ -74,9 +74,19 @@ python zcode_usage_cli.py --window 7d --by-model
   重置倒计时 · 本周进度 · 上下文占比 · MCP 月度(若有)；峰谷徽章(高峰全额/非高峰5折)
 - **算力分布**：按模型 token 占比彩色条形 + 主/子智能体来源
 - **24h 趋势**：官方/本地(回退)折线图 + 峰值/总量 + MCP 本月/24h 行
-- **模型速度**：每模型 加权速度(红<30/黄30-80/绿>80) · 首token · 耗时 · 单次输出/输入
-- **设置窗**：刷新间隔 / 预警阈值 / 深浅主题 / 模块开关 → 保存注册表, 重启保留
-- **窗口**：无边框置顶 · 高度自适应内容 · 顶栏/底栏固定+中部滚轮滚动 · 最小化到任务栏 · 单实例
+- **模型速度**：每模型 加权速度(红<30/黄30-80/绿>80) · 缓存命中率(⚡%, tok/s 右侧) ·
+  首token · 耗时 · 输入/输出(左右分栏, ↓输入青/↑输出绿) · 缓存(命中均/未命中均)；
+  **卡内独立滚动区**（像素级丝滑滚动，滚轮只滚卡片内容、不影响其他模块；右侧细滚动条可拖动）；
+  模型名截断时**悬停显示全名**；
+  点右上角「请求日志 ↗」弹出**独立请求日志悬浮窗**（8 列: 时间/模型/状态/耗时/输入/输出/命中率/命中-未命中，
+  **50 条记录 + 表头固定 + 数据区滚动**；可拖动、可关闭，不关则随主程序一直显示）
+- **额度预警**：越过警告/危急阈值时，顶栏标题旁显示**红点**（危急=红 / 警告=琥珀，
+  恢复正常自动消失；常驻状态提示，不打扰使用）
+- **设置窗**：刷新间隔 / 预警阈值 / 深浅主题 / 模块开关 / **窗口高度**（0=自动, 或指定像素上限；
+  过小会自动补足到可行高度）→ 保存注册表, 重启保留
+- **窗口**：无边框置顶 · 高度自适应内容(上限=工作区, 防盖任务栏; 可自定义) ·
+  面板整体不滚动(模块全展开)、模型速度卡内容超出时卡内滚动 · 最小化到任务栏
+  （最小化期间暂停刷新省资源，还原立即刷新） · **窗口位置记忆**(重启回到上次位置) · 单实例
 
 ## 它读的是什么
 
@@ -204,11 +214,15 @@ python zcode_usage_cli.py --help
 ├─ zcode_monitor_tk.py     # 悬浮窗主程序(tkinter, 入口)
 ├─ zcode_usage.py          # 核心库:读库/分组/费用/分布统计/官方接口/额度
 ├─ zcode_usage_cli.py      # 命令行入口
+├─ ZCodeMonitor.exe        # 打包好的单文件 EXE(12MB, 可直接双击)
 ├─ logo.ico                # 程序图标(窗口/任务栏/EXE)
 ├─ 启动悬浮窗.bat          # 悬浮窗启动(优先 EXE, 回退 pythonw)
 ├─ 一键运行.bat            # CLI 启动入口
 ├─ monitor.json            # 监控配置(额度档位/单价系数/上下文上限)
 ├─ pricing.json            # CLI 费用单价表(可改)
+├─ LICENSE                 # MIT 许可证
+├─ TECH_STACK.md           # 技术栈决策 + 数据源权威清单(面向二次开发)
+├─ RELEASE_NOTES.md        # 发布说明
 └─ README.md
 ```
 
@@ -225,7 +239,7 @@ python zcode_usage_cli.py --help
 
 ```bash
 pip install pyinstaller
-pyinstaller --noconfirm --onefile --windowed --name ZCodeMonitor zcode_monitor_tk.py
+pyinstaller --noconfirm --onefile --windowed --name ZCodeMonitor --icon logo.ico zcode_monitor_tk.py
 # 产物 dist/ZCodeMonitor.exe ≈12MB; 把 monitor.json / pricing.json 放在 exe 同目录
 ```
 
@@ -248,4 +262,4 @@ pyinstaller --noconfirm --onefile --windowed --name ZCodeMonitor zcode_monitor_t
 zcode  glm  zhipu-ai  bigmodel  usage-monitor  dashboard  tkinter  python  desktop-widget  floating-window  quota-tracker  sqlite
 ```
 
-**Release 发布说明：** 见压缩包内 `RELEASE_NOTES.md`。
+**Release 发布说明：** 见 `RELEASE_NOTES.md`。
