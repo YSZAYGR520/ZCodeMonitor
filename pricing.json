@@ -1,0 +1,24 @@
+{
+  "currency": "USD",
+  "_note": [
+    "费用估算单价表。单位: $ / 1M(百万) tokens。",
+    "字段: input=未命中缓存的新输入, cache_read=命中缓存读, cache_write=缓存写入, output=输出。",
+    "GLM Coding Plan 套餐内调用通常已含在订阅里(边际约 $0),可不配或填 0。",
+    "通过你自己的 API 中转/直连按量计费的模型(如 deepseek/gpt),请填你的真实采购单价。",
+    "未在此出现的模型 = 未配置,费用按 0 计,并在输出里标记「未配置单价」。",
+    "改完保存即可,运行用: zcode-usage.exe --cost --by-model"
+  ],
+  "models": {
+    "GLM-5.3":        { "input": 0, "cache_read": 0, "cache_write": 0, "output": 0 },
+    "GLM-5.3-Flash":  { "input": 0, "cache_read": 0, "cache_write": 0, "output": 0 },
+    "GLM-5.2":        { "input": 0, "cache_read": 0, "cache_write": 0, "output": 0 },
+    "GLM-4.5":        { "input": 0, "cache_read": 0, "cache_write": 0, "output": 0 },
+
+    "deepseek-v4-pro-0813":   { "input": 0, "cache_read": 0, "cache_write": 0, "output": 0 },
+    "deepseek-v4-flash-0731": { "input": 0, "cache_read": 0, "cache_write": 0, "output": 0 },
+    "deepseek-v4-pro":        { "input": 0, "cache_read": 0, "cache_write": 0, "output": 0 },
+    "deepseek-v4-flash":      { "input": 0, "cache_read": 0, "cache_write": 0, "output": 0 },
+
+    "gpt-5.6-sol": { "input": 0, "cache_read": 0, "cache_write": 0, "output": 0 }
+  }
+}

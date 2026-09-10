@@ -1,0 +1,22 @@
+{
+  "_说明": "额度监控与悬浮窗配置。额度默认走官方接口(open.bigmodel.cn,API Key自动读取 ~/.zcode/cli/config.json,带缓存),失败回退本地估算(请求数×credits_per_request)。refresh_seconds=悬浮窗刷新间隔秒(2-3600,默认10); warn_pct/crit_pct=额度预警/危急阈值百分比(默认85/95,触发右下角气泡提醒,10分钟冷却); theme=悬浮窗主题 dark深色/light浅色/system跟随系统(默认); plan/credits_per_request/week_start 仅影响估算兜底; context_limits=模型名关键词->上下文token上限。",
+  "plan": "pro",
+  "credits_per_request": 7,
+  "week_start": "monday",
+  "refresh_seconds": 10,
+  "warn_pct": 85,
+  "crit_pct": 95,
+  "theme": "dark",
+  "modules": [
+    "kpi",
+    "quota",
+    "dist",
+    "trend",
+    "models"
+  ],
+  "context_limits": {
+    "glm": 1000000,
+    "deepseek": 128000,
+    "kimi": 256000
+  }
+}
