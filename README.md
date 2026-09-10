@@ -13,6 +13,7 @@
 输出统计的桌面监控面板。数据 100% 本地读取 + 官方额度接口(只读)，不修改 ZCode 数据。
 
 ## 界面形态
+<img width="595" height="949" alt="2026-09-10_09-57-39" src="https://github.com/user-attachments/assets/2e3f0378-696e-4150-8877-e9e1a4daf120" />
 
 | 形态 | 入口 | 说明 |
 | --- | --- | --- |
